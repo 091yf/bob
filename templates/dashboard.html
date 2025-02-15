@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم - Discord Bot | By s7.7</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100vh;
+            width: 250px;
+            background-color: #212529;
+            padding-top: 20px;
+        }
+        .main-content {
+            margin-right: 250px;
+            padding: 20px;
+        }
+        .nav-link {
+            color: #fff;
+            padding: 10px 20px;
+        }
+        .nav-link:hover {
+            background-color: #343a40;
+            color: #fff;
+        }
+        .nav-link.active {
+            background-color: #0d6efd;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h3 class="text-white text-center mb-4">لوحة التحكم</h3>
+        <div class="nav flex-column">
+            <a href="#" class="nav-link active">
+                <i class="bi bi-house-door"></i> الرئيسية
+            </a>
+            <a href="#roles" class="nav-link">
+                <i class="bi bi-person-badge"></i> إدارة الرتب
+            </a>
+            <a href="#moderation" class="nav-link">
+                <i class="bi bi-shield"></i> الإشراف
+            </a>
+            <a href="{{ url_for('logout') }}" class="nav-link text-danger">
+                <i class="bi bi-box-arrow-left"></i> تسجيل الخروج
+            </a>
+            <div class="mt-auto text-center text-white-50 mb-3">
+                <small>By s7.7 🔥</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container-fluid">
+            <h2 class="mb-4">لوحة التحكم الرئيسية</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="row">
+                <!-- إدارة الرتب -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">إدارة الرتب</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- نموذج إضافة رتبة -->
+                            <form action="/add_role" method="POST" class="mb-4">
+                                <h6 class="mb-3">إضافة رتبة</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">اختر العضو</label>
+                                    <select class="form-select" name="member" required>
+                                        <option value="">اختر عضواً...</option>
+                                        {% for member in members %}
+                                            <option value="{{ member.id }}">{{ member.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">اختر الرتبة</label>
+                                    <select class="form-select" name="role" required>
+                                        <option value="">اختر رتبة...</option>
+                                        {% for role in roles %}
+                                            <option value="{{ role.id }}">{{ role.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">إضافة الرتبة</button>
+                            </form>
+
+                            <!-- نموذج إزالة رتبة -->
+                            <form action="/remove_role" method="POST">
+                                <h6 class="mb-3">إزالة رتبة</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">اختر العضو</label>
+                                    <select class="form-select" name="member" required>
+                                        <option value="">اختر عضواً...</option>
+                                        {% for member in members %}
+                                            <option value="{{ member.id }}">{{ member.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">اختر الرتبة</label>
+                                    <select class="form-select" name="role" required>
+                                        <option value="">اختر رتبة...</option>
+                                        {% for role in roles %}
+                                            <option value="{{ role.id }}">{{ role.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-danger">إزالة الرتبة</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- الإجراءات -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">إجراءات الإشراف</h5>
+                        </div>
+                        <div class="card-body">
+                            <!-- نموذج الإجراءات -->
+                            <form action="/moderate" method="POST" class="mb-4">
+                                <h6 class="mb-3">تنفيذ إجراء</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">اختر العضو</label>
+                                    <select class="form-select" name="member" required>
+                                        <option value="">اختر عضواً...</option>
+                                        {% for member in members %}
+                                            <option value="{{ member.id }}">{{ member.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">نوع الإجراء</label>
+                                    <select class="form-select" name="action" required>
+                                        <option value="mute">كتم</option>
+                                        <option value="ban">حظر</option>
+                                        <option value="kick">طرد</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">المدة (بالدقائق)</label>
+                                    <input type="number" class="form-control" name="duration" min="1">
+                                </div>
+                                <button type="submit" class="btn btn-danger">تنفيذ الإجراء</button>
+                            </form>
+
+                            <!-- نموذج فك الحظر -->
+                            <form action="/unban" method="POST">
+                                <h6 class="mb-3">فك الحظر</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">اختر المستخدم المحظور</label>
+                                    <select class="form-select" name="user" required>
+                                        <option value="">اختر مستخدماً...</option>
+                                        {% for user in banned_users %}
+                                            <option value="{{ user.id }}">{{ user.name }}{% if user.reason %} - {{ user.reason }}{% endif %}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-success">فك الحظر</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- قائمة الأعضاء -->
+                <div class="col-12 mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">قائمة الأعضاء</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>اسم العضو</th>
+                                            <th>الرتب</th>
+                                            <th>الحالة</th>
+                                            <th>الإجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for member in members %}
+                                            <tr>
+                                                <td>{{ member.name }}</td>
+                                                <td>
+                                                    {% for role in member.roles %}
+                                                        <span class="badge bg-primary me-1">{{ role.name }}</span>
+                                                    {% endfor %}
+                                                </td>
+                                                <td>
+                                                    {% if member.status == 'online' %}
+                                                        <span class="badge bg-success">متصل</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">غير متصل</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group">
+                                                        <button type="button" class="btn btn-sm btn-primary" onclick="addRole('{{ member.id }}')">
+                                                            <i class="bi bi-plus-circle"></i> إضافة رتبة
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-info" onclick="removeRole('{{ member.id }}')">
+                                                            <i class="bi bi-dash-circle"></i> إزالة رتبة
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-warning" onclick="muteMember('{{ member.id }}')">
+                                                            <i class="bi bi-volume-mute"></i> كتم
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-danger" onclick="kickMember('{{ member.id }}')">
+                                                            <i class="bi bi-box-arrow-right"></i> طرد
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-dark" onclick="banMember('{{ member.id }}')">
+                                                            <i class="bi bi-slash-circle"></i> حظر
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- قائمة المحظورين -->
+                <div class="col-12 mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">قائمة المحظورين</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>اسم المستخدم</th>
+                                            <th>سبب الحظر</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for user in banned_users %}
+                                            <tr>
+                                                <td>{{ user.name }}</td>
+                                                <td>{{ user.reason if user.reason else 'غير محدد' }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                        {% if not banned_users %}
+                                            <tr>
+                                                <td colspan="2" class="text-center">لا يوجد مستخدمين محظورين</td>
+                                            </tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- تغيير كلمة المرور -->
+                <div class="col-12 mt-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">تغيير كلمة المرور</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="/change_password" method="POST">
+                                <div class="mb-3">
+                                    <label class="form-label">رمز التحقق</label>
+                                    <input type="text" class="form-control" name="verify_code" required placeholder="أدخل رمز التحقق">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">كلمة المرور الجديدة</label>
+                                    <input type="password" class="form-control" name="new_password" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">تأكيد كلمة المرور الجديدة</label>
+                                    <input type="password" class="form-control" name="confirm_password" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary">تغيير كلمة المرور</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4 mb-4">
+        <hr>
+        <p class="text-muted">
+            للدعم الفني والمساعدة انضم إلى سيرفر الديسكورد:
+            <a href="https://discord.gg/JJU8s7UNPe" target="_blank" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-discord"></i> انضم إلى السيرفر
+            </a>
+        </p>
+        <p class="text-muted small">By s7.7 🔥</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function kickMember(memberId) {
+        if (confirm('هل أنت متأكد من طرد هذا العضو؟')) {
+            fetch(`/kick_member/${memberId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('حدث خطأ: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('حدث خطأ: ' + error);
+            });
+        }
+    }
+
+    function muteMember(memberId) {
+        if (confirm('هل أنت متأكد من كتم هذا العضو؟')) {
+            fetch(`/mute_member/${memberId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('حدث خطأ: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('حدث خطأ: ' + error);
+            });
+        }
+    }
+
+    function banMember(memberId) {
+        if (confirm('هل أنت متأكد من حظر هذا العضو؟')) {
+            fetch(`/ban_member/${memberId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    location.reload();
+                } else {
+                    alert('حدث خطأ: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('حدث خطأ: ' + error);
+            });
+        }
+    }
+
+    function addRole(memberId) {
+        const roleSelect = document.createElement('select');
+        roleSelect.className = 'form-select';
+        
+        // إضافة الرتب المتاحة
+        {% for role in roles %}
+            const option = document.createElement('option');
+            option.value = '{{ role.id }}';
+            option.textContent = '{{ role.name }}';
+            roleSelect.appendChild(option);
+        {% endfor %}
+
+        const dialog = document.createElement('div');
+        dialog.innerHTML = `
+            <div class="modal fade" id="addRoleModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">إضافة رتبة</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addRoleForm" method="POST" action="/add_role">
+                                <input type="hidden" name="member" value="${memberId}">
+                                <div class="mb-3">
+                                    <label class="form-label">اختر الرتبة</label>
+                                    ${roleSelect.outerHTML}
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" form="addRoleForm" class="btn btn-primary">إضافة</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(dialog);
+        const modal = new bootstrap.Modal(document.getElementById('addRoleModal'));
+        modal.show();
+
+        document.getElementById('addRoleModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    }
+
+    function removeRole(memberId) {
+        const roleSelect = document.createElement('select');
+        roleSelect.className = 'form-select';
+        
+        // إضافة الرتب الحالية للعضو
+        const member = {{ members|tojson|safe }}.find(m => m.id === memberId);
+        if (member) {
+            member.roles.forEach(role => {
+                const option = document.createElement('option');
+                option.value = role.id;
+                option.textContent = role.name;
+                roleSelect.appendChild(option);
+            });
+        }
+
+        const dialog = document.createElement('div');
+        dialog.innerHTML = `
+            <div class="modal fade" id="removeRoleModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">إزالة رتبة</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="removeRoleForm" method="POST" action="/remove_role">
+                                <input type="hidden" name="member" value="${memberId}">
+                                <div class="mb-3">
+                                    <label class="form-label">اختر الرتبة</label>
+                                    ${roleSelect.outerHTML}
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                            <button type="submit" form="removeRoleForm" class="btn btn-danger">إزالة</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(dialog);
+        const modal = new bootstrap.Modal(document.getElementById('removeRoleModal'));
+        modal.show();
+
+        document.getElementById('removeRoleModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+        });
+    }
+    </script>
+</body>
+</html> 
