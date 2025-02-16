@@ -103,7 +103,14 @@ def init_db():
 def root():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
+    
+    bot_status = {
+        'connected': bot.is_ready(),
+        'guilds': len(bot.guilds) if bot.is_ready() else 0,
+        'members': len(bot.guilds[0].members) if bot.is_ready() and bot.guilds else 0
+    }
+    
+    return render_template('login.html', bot_status=bot_status)
 
 @app.route('/dashboard')
 @login_required
@@ -470,10 +477,24 @@ def run_bot():
     try:
         print("جاري محاولة تشغيل البوت...")
         print(f"Token being used: {TOKEN[:10]}...") # طباعة جزء من التوكن للتحقق
+        print("Intents enabled:", {
+            "members": intents.members,
+            "presences": intents.presences,
+            "message_content": intents.message_content,
+            "guilds": intents.guilds,
+            "bans": intents.bans
+        })
         bot.run(TOKEN, reconnect=True)
     except discord.LoginFailure as e:
         print(f"خطأ في تسجيل الدخول للبوت: {str(e)}")
         print("تأكد من صحة التوكن في إعدادات Render")
+        print("الرجاء التحقق من:")
+        print("1. صحة التوكن في إعدادات Render")
+        print("2. تفعيل صلاحيات البوت في بوابة Discord Developer")
+        print("3. وجود البوت في السيرفر")
+    except discord.HTTPException as e:
+        print(f"خطأ في الاتصال: {str(e)}")
+        print("قد تكون هناك مشكلة في الاتصال بخوادم Discord")
     except Exception as e:
         print(f"خطأ غير متوقع في تشغيل البوت: {str(e)}")
         print("Stack trace:", traceback.format_exc())
@@ -510,5 +531,16 @@ else:
     web_alive_thread.start()
     
     print("تم بدء تشغيل البوت في الخلفية")
+    
+    # إضافة فترة انتظار للتأكد من اتصال البوت
+    time.sleep(5)
+    if not bot.is_ready():
+        print("تحذير: البوت لم يتصل بعد")
+    else:
+        print(f"البوت متصل بنجاح كـ {bot.user.name}")
+        if bot.guilds:
+            print(f"متصل بـ {len(bot.guilds)} سيرفر")
+            print(f"السيرفر الأول: {bot.guilds[0].name}")
+            print(f"عدد الأعضاء: {len(bot.guilds[0].members)}")
     
     application = app 
