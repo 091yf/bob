@@ -109,57 +109,75 @@ def root():
 @login_required
 def dashboard():
     try:
+        if not bot.is_ready():
+            print("البوت غير متصل")
+            return render_template('dashboard.html', 
+                                members=[], 
+                                roles=[], 
+                                banned_users=[], 
+                                error="البوت غير متصل")
+        
         if not bot.guilds:
-            return render_template('dashboard.html', members=[], roles=[], banned_users=[], error="البوت غير متصل بأي سيرفر")
+            print("البوت غير متصل بأي سيرفر")
+            return render_template('dashboard.html', 
+                                members=[], 
+                                roles=[], 
+                                banned_users=[], 
+                                error="البوت غير متصل بأي سيرفر")
         
         guild = bot.guilds[0]
+        print(f"تم العثور على السيرفر: {guild.name}")
+        print(f"عدد الأعضاء في السيرفر: {len(guild.members)}")
+        
+        # جلب الأعضاء
         members = []
-        roles = []
-        banned_users = []
-
+        for member in guild.members:
+            try:
+                member_roles = [{"id": role.id, "name": role.name} 
+                              for role in member.roles 
+                              if role.name != "@everyone"]
+                member_data = {
+                    "id": member.id,
+                    "name": member.name,
+                    "roles": member_roles,
+                    "status": str(member.status)
+                }
+                members.append(member_data)
+                print(f"تم إضافة العضو: {member.name}")
+            except Exception as e:
+                print(f"خطأ في جلب معلومات العضو {member.name}: {str(e)}")
+        
         # جلب الرتب
+        roles = []
         for role in guild.roles:
-            if role.name != "@everyone":  # تجاهل رتبة everyone
+            if role.name != "@everyone":
                 roles.append({
                     "id": role.id,
                     "name": role.name,
                     "color": str(role.color)
                 })
-
-        # جلب الأعضاء
-        for member in guild.members:
-            member_data = {
-                "id": member.id,
-                "name": member.name,
-                "roles": [{"id": role.id, "name": role.name} for role in member.roles if role.name != "@everyone"],
-                "status": str(member.status)
-            }
-            members.append(member_data)
         
         # جلب المحظورين
+        banned_users = []
         try:
             async def get_bans():
-                bans = []
-                async for ban in guild.bans():
-                    bans.append({
-                        "id": ban.user.id,
-                        "name": ban.user.name,
-                        "reason": ban.reason or "غير محدد"
-                    })
-                return bans
-                
+                return [ban async for ban in guild.bans()]
             banned_users = asyncio.run_coroutine_threadsafe(get_bans(), bot.loop).result()
-            print(f"تم جلب المحظورين: {banned_users}")
+            banned_users = [{"id": ban.user.id, "name": ban.user.name, "reason": ban.reason or "غير محدد"} 
+                          for ban in banned_users]
         except Exception as e:
             print(f"خطأ في جلب المحظورين: {str(e)}")
-            banned_users = []
+        
+        print(f"تم جلب {len(members)} عضو و {len(roles)} رتبة و {len(banned_users)} محظور")
         
         return render_template('dashboard.html', 
                              members=members, 
                              roles=roles, 
                              banned_users=banned_users)
+                             
     except Exception as e:
-        print(f"خطأ: {str(e)}")
+        print(f"خطأ في لوحة التحكم: {str(e)}")
+        print("Stack trace:", traceback.format_exc())
         return render_template('dashboard.html', 
                              members=[], 
                              roles=[], 
