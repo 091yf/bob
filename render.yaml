@@ -15,4 +15,6 @@ services:
         sync: false
       - key: PORT
         value: 10000
+      - key: APP_URL
+        value: https://bob-oirn.onrender.com
     autoDeploy: true 

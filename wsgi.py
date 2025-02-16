@@ -10,6 +10,7 @@ import os
 from dotenv import load_dotenv
 import requests
 import time
+import traceback
 
 print("بدء تشغيل النظام...")
 
@@ -432,14 +433,32 @@ def unban():
         flash(f'حدث خطأ: {str(e)}', 'error')
         return redirect(url_for('dashboard'))
 
+@app.route('/status')
+def status():
+    """التحقق من حالة البوت"""
+    if not bot.is_ready():
+        return jsonify({
+            'status': 'error',
+            'message': 'البوت غير متصل',
+            'guilds': 0
+        })
+    return jsonify({
+        'status': 'ok',
+        'message': 'البوت متصل',
+        'guilds': len(bot.guilds)
+    })
+
 def run_bot():
     try:
         print("جاري محاولة تشغيل البوت...")
-        bot.run(TOKEN)
+        print(f"Token being used: {TOKEN[:10]}...") # طباعة جزء من التوكن للتحقق
+        bot.run(TOKEN, reconnect=True)
     except discord.LoginFailure as e:
         print(f"خطأ في تسجيل الدخول للبوت: {str(e)}")
+        print("تأكد من صحة التوكن في إعدادات Render")
     except Exception as e:
         print(f"خطأ غير متوقع في تشغيل البوت: {str(e)}")
+        print("Stack trace:", traceback.format_exc())
 
 def keep_web_alive():
     """وظيفة للحفاظ على نشاط الويب سيرفر"""
