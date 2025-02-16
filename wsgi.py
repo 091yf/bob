@@ -44,6 +44,9 @@ print("تم إعداد قاعدة البيانات")
 
 # إعداد البوت
 intents = discord.Intents.all()  # تفعيل جميع الصلاحيات
+intents.members = True
+intents.presences = True
+intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 print("تم إعداد البوت")
