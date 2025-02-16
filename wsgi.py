@@ -3,11 +3,13 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import asyncio
 import threading
 import os
 from dotenv import load_dotenv
+import requests
+import time
 
 print("بدء تشغيل النظام...")
 
@@ -46,11 +48,25 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 print("تم إعداد البوت")
 
+@tasks.loop(minutes=10)
+async def keep_alive():
+    """وظيفة للحفاظ على نشاط البوت"""
+    print("البوت نشط...")
+    if bot.guilds:
+        guild = bot.guilds[0]
+        try:
+            async for _ in guild.bans(limit=1):
+                break
+        except Exception as e:
+            print(f"خطأ في فحص النشاط: {str(e)}")
+
 @bot.event
 async def on_ready():
     print(f'Bot logged in as {bot.user}')
     print('By s7.7 - جميع الحقوق محفوظة')
     await bot.change_presence(activity=discord.Game(name="By s7.7 🔥"))
+    # بدء وظيفة الحفاظ على النشاط
+    keep_alive.start()
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -422,6 +438,18 @@ def run_bot():
     except Exception as e:
         print(f"خطأ غير متوقع في تشغيل البوت: {str(e)}")
 
+def keep_web_alive():
+    """وظيفة للحفاظ على نشاط الويب سيرفر"""
+    while True:
+        try:
+            # الحصول على عنوان التطبيق من المتغيرات البيئية
+            app_url = os.getenv('APP_URL', 'http://localhost:5000')
+            response = requests.get(app_url)
+            print(f"حالة الويب سيرفر: {response.status_code}")
+        except Exception as e:
+            print(f"خطأ في فحص نشاط الويب سيرفر: {str(e)}")
+        time.sleep(300)  # انتظار 5 دقائق
+
 if __name__ == '__main__':
     print("يمكنك الوصول إلى لوحة التحكم على: http://localhost:5000")
     print("بيانات الدخول:")
@@ -436,6 +464,11 @@ else:
     # تشغيل البوت في خلفية منفصلة
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
+    
+    # تشغيل وظيفة الحفاظ على نشاط الويب سيرفر في خلفية منفصلة
+    web_alive_thread = threading.Thread(target=keep_web_alive, daemon=True)
+    web_alive_thread.start()
+    
     print("تم بدء تشغيل البوت في الخلفية")
     
     application = app 
