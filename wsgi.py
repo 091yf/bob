@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 import requests
 import time
 import traceback
+import gc  # إضافة garbage collector
+import psutil  # إضافة مراقبة الذاكرة
 
 print("بدء تشغيل النظام...")
 
@@ -64,6 +66,20 @@ async def keep_alive():
         except Exception as e:
             print(f"خطأ في فحص النشاط: {str(e)}")
 
+def monitor_memory():
+    """مراقبة استخدام الذاكرة"""
+    process = psutil.Process(os.getpid())
+    memory_usage = process.memory_info().rss / 1024 / 1024  # تحويل إلى ميجابايت
+    print(f"استخدام الذاكرة: {memory_usage:.2f} MB")
+    if memory_usage > 450:  # إذا تجاوز 450 ميجابايت
+        print("تنظيف الذاكرة...")
+        gc.collect()  # تنظيف الذاكرة
+
+@tasks.loop(minutes=5)
+async def memory_check():
+    """فحص دوري للذاكرة"""
+    monitor_memory()
+
 @bot.event
 async def on_ready():
     print(f'Bot logged in as {bot.user}')
@@ -71,6 +87,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Game(name="By s7.7 🔥"))
     # بدء وظيفة الحفاظ على النشاط
     keep_alive.start()
+    memory_check.start()  # بدء فحص الذاكرة
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -116,6 +133,8 @@ def root():
 @login_required
 def dashboard():
     try:
+        monitor_memory()  # فحص الذاكرة قبل تحميل لوحة التحكم
+        
         if not bot.is_ready():
             print("البوت غير متصل")
             return render_template('dashboard.html', 
@@ -177,6 +196,8 @@ def dashboard():
         
         print(f"تم جلب {len(members)} عضو و {len(roles)} رتبة و {len(banned_users)} محظور")
         
+        # تنظيف الذاكرة بعد الانتهاء
+        gc.collect()
         return render_template('dashboard.html', 
                              members=members, 
                              roles=roles, 
@@ -185,6 +206,7 @@ def dashboard():
     except Exception as e:
         print(f"خطأ في لوحة التحكم: {str(e)}")
         print("Stack trace:", traceback.format_exc())
+        gc.collect()  # تنظيف الذاكرة في حالة الخطأ
         return render_template('dashboard.html', 
                              members=[], 
                              roles=[], 
